@@ -1,11 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-
 export default defineConfig({
   plugins: [react()],
   server: {
     host: "0.0.0.0",
-    port: process.env.PORT || 5173,
-    strictPort: true, // Ensures Vite fails if the port is unavailable
+    port: 5173, // Keep this separate from the backend
   },
 });
