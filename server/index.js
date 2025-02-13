@@ -2,6 +2,7 @@ import express from "express";
 import fs from "fs/promises";
 import cors from "cors";
 import path from "path";
+import fsSync from "fs";
 
 const app = express();
 const PORT = process.env.PORT || 5000; // Use Azure's assigned port
@@ -10,13 +11,16 @@ const PORT = process.env.PORT || 5000; // Use Azure's assigned port
 app.use(cors());
 app.use(express.json());
 
-// Serve the built React frontend
-const __dirname = path.resolve();
-app.use(express.static(path.join(__dirname, "dist")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
-});
+// Function to read credentials
+const readCredentials = async () => {
+  try {
+    const credsFilePath = process.env.CREDENTIALS_PATH || path.resolve("server/credentials.json");
+    const data = await fs.readFile(credsFilePath, "utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    return []; // Return empty array if file doesn't exist
+  }
+};
 
 // API Route to Save Credentials
 app.post("/save-credentials", async (req, res) => {
@@ -38,7 +42,20 @@ app.post("/save-credentials", async (req, res) => {
   }
 });
 
+// Serve the built React frontend (if exists)
+const __dirname = path.resolve();
+const distPath = path.join(__dirname, "dist");
+
+if (fsSync.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+} else {
+  console.error("⚠️ Warning: 'dist/' folder not found. Run 'npm run build'.");
+}
+
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
